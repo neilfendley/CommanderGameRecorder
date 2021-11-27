@@ -40,6 +40,14 @@ class CommanderGame():
             player = player_id
         return player
 
+    def add_card_to_zone(self, player, card, zone):
+        player = self.get_player_name(player)
+        if player in self.board_state.keys():
+            self.board_state[player][zone].append(card)
+            self.board_state[player]['Card_ids'].append(card['name'])
+            return True
+        return False
+
     def add_card(self, player, card):
         player = self.get_player_name(player)
         if player in self.board_state.keys():
@@ -51,7 +59,7 @@ class CommanderGame():
     def draw_board(self, card_list, player, zone, save_string = None):
         if not len(card_list) > 0:
             return False
-        board = discord.Embed()
+        board = discord.Embed(title=f'{player} {zone}')
         num_cards = len(card_list)
         cards_per_row = 5
         if num_cards > cards_per_row:
@@ -87,7 +95,6 @@ class CommanderGame():
             res = requests.get(card['image_uris']['normal'])
             card_img = Image.open(BytesIO(res.content))
             final_image.paste(card_img, ((idx % cards_per_row * width_interval), int(idx / cards_per_row) * height_interval))
-        board.title = player + " " + zone
         board.add_field(name=f'Card Ids', value="\n".join(body))
         if not save_string:
             save_string = f'{player}_{zone}.png'
@@ -97,11 +104,18 @@ class CommanderGame():
         return(file,board)
 
     def draw_zone(self, player, zone):
+        ## Draw the graveyard and exile as one Block
         if zone != 'Battlefield':
-            file, board = self.draw_board(self.board_state[player][zone], save_string=f'board_states/{player}_{zone}.png')
-            return [(file, board)]
+            if len(self.board_state[player][zone]) > 0:
+                file, board = self.draw_board(self.board_state[player][zone], player, zone)
+                return [(file, board)]
+            else:
+                return []
+               
+        ## Draw Types individually on the battlefield
         else:
             all_cards = self.board_state[player][zone]
+            ##Broken into 4 types of permanents
             creatures = []
             artifacts = []
             enchantments = []
@@ -133,7 +147,14 @@ class CommanderGame():
                 lands_board.title = f'{player} {zone} lands'
                 battle_zones.append((lands_file, lands_board))
             return battle_zones
-           
+
+    def get_complete_board_state(self):
+        embed_list = []
+        for player in self.player_list:
+            for zone in ['Battlefield', 'Graveyard', 'Exile']:
+                embed_list += self.draw_zone(player, zone)
+        return embed_list
+
     def get_board_state(self):
         embed_list = []
         for player in self.player_list:
@@ -186,6 +207,8 @@ class CommanderClient(discord.Client):
                 if ("creature" in card_data['type_line'].lower() or "artifact" in card_data['type_line'].lower() or
                     "enchantment" in card_data['type_line'].lower() or "land" in card_data['type_line'].lower()):
                     self.game.add_card(message.author.name, card_data)
+                else:
+                    self.game.add_card_to_zone(message.author.name, card_data, "Graveyard")
                 
                 ##TODO sent instant and sorcery to the graveyard
                     
@@ -244,7 +267,13 @@ class CommanderClient(discord.Client):
                 if target_player.startswith("<@"):
                     target_player = message.guild.get_member(int(target_player[3:-1])).name
                 card_id = int(split[3])
-                self.game.remove(target_player, card_id)
+                self.game.remove(target_player, card_id)\
+            
+            elif command in ['f','full_board']:
+                boards = self.game.get_complete_board_state()
+                for (file, embed) in boards:
+                    await message.channel.send(file=file,embed=embed)
+            
                 
 
     
