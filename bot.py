@@ -2,6 +2,7 @@
 import os
 from discord import embeds
 import requests
+import json
 from io import BytesIO
 
 import PIL.Image as Image
@@ -47,6 +48,15 @@ class CommanderGame():
             self.board_state[player]['Card_ids'].append(card['name'])
             return True
         return False
+
+    def save_board_state(self):
+        with open("board_states/curr_game_state.json", "w") as json_file:
+            json.dump(self.board_state, json_file)
+
+    def load_board_state(self):
+        with open("board_states/curr_game_state.json", "r") as json_file:
+            self.board_state = json.load(json_file)
+        self.player_list = self.board_state.keys()
 
     def add_card(self, player, card):
         player = self.get_player_name(player)
@@ -172,6 +182,7 @@ class CommanderGame():
                     return True
     
         return False
+    
 
 class CommanderClient(discord.Client):
     def __init__(self,**kwargs):
@@ -273,6 +284,12 @@ class CommanderClient(discord.Client):
                 boards = self.game.get_complete_board_state()
                 for (file, embed) in boards:
                     await message.channel.send(file=file,embed=embed)
+            
+            elif command in ['save', 's', 'save_board']:
+                self.game.save_board_state()
+
+            elif command in ['load', 'l', 'load_board']:
+                self.game.load_board_state()
             
                 
 
