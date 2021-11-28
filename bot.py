@@ -280,7 +280,7 @@ class CommanderClient(discord.Client):
                 card_id = int(split[3])
                 self.game.remove(target_player, card_id)\
             
-            elif command in ['f','full_board']:
+            elif command in ['f', 'full', 'full_board']:
                 boards = self.game.get_complete_board_state()
                 for (file, embed) in boards:
                     await message.channel.send(file=file,embed=embed)
@@ -297,7 +297,7 @@ class CommanderClient(discord.Client):
     def manacost_converter(self, card_string):
         costs = ['mana'+cost[1:].lower() for cost in card_string.split('}')[:-1]]
         return costs
-
+    
 
 
 client = CommanderClient(intents=intents)
