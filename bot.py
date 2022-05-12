@@ -169,10 +169,9 @@ class CommanderGame():
     def play_card(self, card, message):
         if card.split(" ")[0] == '~t':
             card = " ".join(card.split(" ")[1:]) + ' ++is:token'
-        PARAMS = {'q': card, 'include_extras': True}
+        PARAMS = {'q': card}
         r = requests.get(url = URL, params = PARAMS)
         data = r.json()
-        print(data)
         
         card_data = data['data'][0]
         url = card_data['scryfall_uri']
@@ -181,9 +180,14 @@ class CommanderGame():
             or "planeswalker" in card_data['type_line'].lower()):
             self.add_card(message.author.name, card_data)
         else:
-            self.game.add_card_to_zone(message.author.name, card_data, "Graveyard")
+            self.add_card_to_zone(message.author.name, card_data, "Graveyard")
         
-            
+        if 'card_faces' in card_data.keys():
+            card_data_1 = card_data['card_faces'][0]
+            card_data_2 = card_data['card_faces'][1]
+            card_data = card_data_1
+        else:
+            card_data_2 = False
         mana_cost = self.manacost_converter(card_data['mana_cost'], message)
         card_name = card_data['name'] + " " + mana_cost
         #body = [card_data['type_line']]
@@ -192,6 +196,13 @@ class CommanderGame():
             body=[self.manacost_converter(card_data['oracle_text'], message)]
         if 'power' in card_data.keys():
             body.append(card_data['power'] + "/" + card_data['toughness'])
+        if card_data_2:
+            body.append('-----------------')
+            body.append(card_data_2['name'])
+            body.append(self.manacost_converter(card_data['oracle_text'], message))
+            if 'power' in card_data_2.keys():
+                body.append(card_data_2['power'] + "/" + card_data_2['toughness'])
+
         body = '\n'.join(body)
         embed = discord.Embed(title=card_name, url=url)
         embed.add_field(name=card_data['type_line'],value=body)
