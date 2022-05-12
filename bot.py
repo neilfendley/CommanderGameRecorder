@@ -167,18 +167,22 @@ class CommanderGame():
         return embed_list
 
     def play_card(self, card, message):
+        if card.split(" ")[0] == '~t':
+            card = " ".join(card.split(" ")[1:]) + ' ++is:token'
         PARAMS = {'q': card, 'include_extras': True}
         r = requests.get(url = URL, params = PARAMS)
         data = r.json()
+        print(data)
+        
         card_data = data['data'][0]
         url = card_data['scryfall_uri']
         if ("creature" in card_data['type_line'].lower() or "artifact" in card_data['type_line'].lower() or
-            "enchantment" in card_data['type_line'].lower() or "land" in card_data['type_line'].lower()):
+            "enchantment" in card_data['type_line'].lower() or "land" in card_data['type_line'].lower()
+            or "planeswalker" in card_data['type_line'].lower()):
             self.add_card(message.author.name, card_data)
         else:
             self.game.add_card_to_zone(message.author.name, card_data, "Graveyard")
         
-        ##TODO sent instant and sorcery to the graveyard
             
         mana_cost = self.manacost_converter(card_data['mana_cost'], message)
         card_name = card_data['name'] + " " + mana_cost
@@ -202,7 +206,6 @@ class CommanderGame():
             for split in first_split:
                 final = split.split('{')
                 if len(final) == 2:
-                    print(final)
                     normal_text = final[0]
                     mana_symbol = 'mana'+final[1].lower()
                     emoji_manacost = str(discord.utils.get(message.guild.emojis, name=mana_symbol))
@@ -261,7 +264,7 @@ class CommanderClient(discord.Client):
                 command = 'state'
             ## Play a card command, default add it to board of user who typed it
             if command in ['play','p']:
-                card = "".join(split[2:])
+                card = " ".join(split[2:])
                 if not card:
                     response = 'No card played'
                     await message.channel.send(response)
