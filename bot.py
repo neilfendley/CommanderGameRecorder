@@ -27,6 +27,7 @@ class CommanderGame():
     def __init__(self, players):
         self.player_list = players
         self.board_state = {}
+        ## Initialize a game with players
         for player in players:
             self.board_state[player] = {'Battlefield':[],'Graveyard':[],'Exile':[], 'Hand':[], 'Card_ids': []}
     
@@ -165,6 +166,56 @@ class CommanderGame():
                 embed_list += self.draw_zone(player, zone)
         return embed_list
 
+    def play_card(self, card, message):
+        PARAMS = {'q': card, 'include_extras': True}
+        r = requests.get(url = URL, params = PARAMS)
+        data = r.json()
+        card_data = data['data'][0]
+        url = card_data['scryfall_uri']
+        if ("creature" in card_data['type_line'].lower() or "artifact" in card_data['type_line'].lower() or
+            "enchantment" in card_data['type_line'].lower() or "land" in card_data['type_line'].lower()):
+            self.add_card(message.author.name, card_data)
+        else:
+            self.game.add_card_to_zone(message.author.name, card_data, "Graveyard")
+        
+        ##TODO sent instant and sorcery to the graveyard
+            
+        mana_cost = self.manacost_converter(card_data['mana_cost'], message)
+        card_name = card_data['name'] + " " + mana_cost
+        #body = [card_data['type_line']]
+        body = []
+        if 'oracle_text' in card_data.keys():
+            body=[self.manacost_converter(card_data['oracle_text'], message)]
+        if 'power' in card_data.keys():
+            body.append(card_data['power'] + "/" + card_data['toughness'])
+        body = '\n'.join(body)
+        embed = discord.Embed(title=card_name, url=url)
+        embed.add_field(name=card_data['type_line'],value=body)
+        embed.set_thumbnail(url=card_data['image_uris']['large'])
+        
+        return embed
+
+    def manacost_converter(self, card_string, message):
+        if '}' in card_string:
+            final_text = ''
+            first_split = card_string.split('}')
+            for split in first_split:
+                final = split.split('{')
+                if len(final) == 2:
+                    print(final)
+                    normal_text = final[0]
+                    mana_symbol = 'mana'+final[1].lower()
+                    emoji_manacost = str(discord.utils.get(message.guild.emojis, name=mana_symbol))
+                    final_text = final_text + normal_text + emoji_manacost
+                if len(final) == 1:
+                    final_text += final[0]
+
+
+        else:
+            final_text = card_string
+        
+        return final_text
+
     def get_board_state(self):
         embed_list = []
         for player in self.player_list:
@@ -195,8 +246,12 @@ class CommanderClient(discord.Client):
     async def on_message(self, message):
         if message.author == client.user:
             return
-        if message.content.startswith('!cgr'):
-            split = message.content.split(' ')
+        if message.content.startswith('!cgr') or message.content.startswith('~'):
+            if message.content.startswith('~'):
+                copy = "!cgr " + message.content[1:]
+            else:
+                copy = message.content
+            split = copy.split(' ')
             if len(split) == 1:
                 command = 'board'
             else:
@@ -210,33 +265,7 @@ class CommanderClient(discord.Client):
                 if not card:
                     response = 'No card played'
                     await message.channel.send(response)
-                PARAMS = {'q': card}
-                r = requests.get(url = URL, params = PARAMS)
-                data = r.json()
-                card_data = data['data'][0]
-                url = card_data['scryfall_uri']
-                if ("creature" in card_data['type_line'].lower() or "artifact" in card_data['type_line'].lower() or
-                    "enchantment" in card_data['type_line'].lower() or "land" in card_data['type_line'].lower()):
-                    self.game.add_card(message.author.name, card_data)
-                else:
-                    self.game.add_card_to_zone(message.author.name, card_data, "Graveyard")
-                
-                ##TODO sent instant and sorcery to the graveyard
-                    
-                mana_cost = self.manacost_converter(card_data['mana_cost'])
-                emoji_manacost = "".join([str(discord.utils.get(message.guild.emojis, name=cost))
-                                            for cost in mana_cost])
-                card_name = card_data['name'] + " " + emoji_manacost
-                #body = [card_data['type_line']]
-                body = []
-                if 'oracle_text' in card_data.keys():
-                    body=[card_data['oracle_text']]
-                if 'power' in card_data.keys():
-                    body.append(card_data['power'] + "/" + card_data['toughness'])
-                body = '\n'.join(body)
-                embed = discord.Embed(title=card_name, url=url)
-                embed.add_field(name=card_data['type_line'],value=body)
-                embed.set_thumbnail(url=card_data['image_uris']['large'])
+                embed = self.game.play_card(card, message)
                 await message.channel.send(embed=embed)
 
             ## Command to return the board state
@@ -278,7 +307,7 @@ class CommanderClient(discord.Client):
                 if target_player.startswith("<@"):
                     target_player = message.guild.get_member(int(target_player[3:-1])).name
                 card_id = int(split[3])
-                self.game.remove(target_player, card_id)\
+                self.game.remove(target_player, card_id)
             
             elif command in ['f', 'full', 'full_board']:
                 boards = self.game.get_complete_board_state()
@@ -294,9 +323,7 @@ class CommanderClient(discord.Client):
                 
 
     
-    def manacost_converter(self, card_string):
-        costs = ['mana'+cost[1:].lower() for cost in card_string.split('}')[:-1]]
-        return costs
+    
     
 
 
