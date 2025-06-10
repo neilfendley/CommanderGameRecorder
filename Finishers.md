@@ -43,8 +43,8 @@ Some decks rely on triggered or activated abilities dealing damage to win the ga
 
 To make a more resilient combo deck have redundancy of each effect within the combo. E.g. Blood artist and zulaport cutthroat. However it's worth noting the second copies are often "dead cards" if you draw both. This is why tutors are preferred at the higher level. I believe cedh thinking if 2 copies redundancy is good, 3 is excessive. This is no hard rule and up for debate. 
 
-# Enhancers
-Often, any one single spell is often not enough to be a wincon by itself decks. Often a "wincon enhancer" is required, which is a card that significantly amplifies the effect of a wincon. In the token generator example, an amplifier could be a doubling season. It is also possible that the wincon enhancer is another wincon itself, i.e. an multiplier and an overrun effect, which synergize extremely well to skyrocket damage if deployed together. 
+## Enhancers
+One single spell is not enough to be a wincon by itself for many decks. Often a "wincon enhancer" is required, which is a card that significantly amplifies the effect of a wincon. In the token generator example, an amplifier could be a doubling season. It is also possible that the wincon enhancer is another wincon itself, i.e. an multiplier and an overrun effect, which synergize extremely well to skyrocket damage if deployed together. 
 
 Building a deck that has enhancers that work with multiple wincons, or multiple wincons that work with the same enhancer will result in much more consistent ability to end the game! 
 
